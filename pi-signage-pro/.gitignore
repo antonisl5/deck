@@ -1,0 +1,10 @@
+backend/node_modules/
+backend/uploads/
+backend/db/
+backend/.env
+frontend-player/node_modules/
+frontend-player/build/
+frontend-player/.env
+frontend-admin/node_modules/
+frontend-admin/build/
+frontend-admin/.env
