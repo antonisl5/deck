@@ -20,11 +20,15 @@ sudo apt-get upgrade -y
 
 # 2. Install required system packages
 echo ">>> Installing required packages (curl, unclutter, sqlite3, etc)..."
-# Try chromium-browser first (older RPi OS), fallback to chromium (newer Debian/Ubuntu based OS like Trixie)
-if apt-cache show chromium-browser > /dev/null 2>&1; then
+
+# Try to find which chromium package is actually installable.
+# 'apt-cache show' can return true for obsolete/virtual packages, so we use 'apt-cache policy'
+if apt-cache policy chromium-browser | grep -q "Candidate: [0-9]"; then
     CHROMIUM_PKG="chromium-browser"
+    CHROMIUM_BIN="chromium-browser"
 else
     CHROMIUM_PKG="chromium"
+    CHROMIUM_BIN="chromium"
 fi
 
 echo ">>> Selected browser package: $CHROMIUM_PKG"
@@ -67,7 +71,7 @@ cat << AUTOSTARTEOF > "$AUTOSTART_FILE"
 @unclutter -idle 0.1 -root
 
 # Auto-launch Chromium in Kiosk Mode
-@$CHROMIUM_PKG --noerrdialogs --disable-infobars --kiosk http://localhost:3002/
+@$CHROMIUM_BIN --noerrdialogs --disable-infobars --kiosk http://localhost:3002/
 AUTOSTARTEOF
 
 # 6. Setup Backend
