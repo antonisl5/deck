@@ -19,8 +19,16 @@ sudo apt-get update -y
 sudo apt-get upgrade -y
 
 # 2. Install required system packages
-echo ">>> Installing required packages (curl, unclutter, chromium-browser, etc)..."
-sudo apt-get install -y curl x11-xserver-utils unclutter chromium-browser sqlite3
+echo ">>> Installing required packages (curl, unclutter, sqlite3, etc)..."
+# Try chromium-browser first (older RPi OS), fallback to chromium (newer Debian/Ubuntu based OS like Trixie)
+if apt-cache show chromium-browser > /dev/null 2>&1; then
+    CHROMIUM_PKG="chromium-browser"
+else
+    CHROMIUM_PKG="chromium"
+fi
+
+echo ">>> Selected browser package: $CHROMIUM_PKG"
+sudo apt-get install -y curl x11-xserver-utils unclutter $CHROMIUM_PKG sqlite3
 
 # 3. Install Node.js and npm (Using Node.js 18.x as a stable version)
 echo ">>> Installing Node.js..."
@@ -38,14 +46,14 @@ sudo npm install -g pm2
 # 5. Disable screen sleep/blanking
 echo ">>> Disabling screen sleep and screensaver..."
 # Modify autostart to disable screensaver and start chromium
-AUTOSTART_DIR="/home/pi/.config/lxsession/LXDE-pi"
+AUTOSTART_DIR="$HOME/.config/lxsession/LXDE-pi"
 AUTOSTART_FILE="$AUTOSTART_DIR/autostart"
 
 if [ ! -d "$AUTOSTART_DIR" ]; then
     mkdir -p "$AUTOSTART_DIR"
 fi
 
-cat << 'AUTOSTARTEOF' > "$AUTOSTART_FILE"
+cat << AUTOSTARTEOF > "$AUTOSTART_FILE"
 @lxpanel --profile LXDE-pi
 @pcmanfm --desktop --profile LXDE-pi
 @xscreensaver -no-splash
@@ -59,7 +67,7 @@ cat << 'AUTOSTARTEOF' > "$AUTOSTART_FILE"
 @unclutter -idle 0.1 -root
 
 # Auto-launch Chromium in Kiosk Mode
-@chromium-browser --noerrdialogs --disable-infobars --kiosk http://localhost:3002/
+@$CHROMIUM_PKG --noerrdialogs --disable-infobars --kiosk http://localhost:3002/
 AUTOSTARTEOF
 
 # 6. Setup Backend
@@ -92,7 +100,7 @@ cd ../frontend-admin
 pm2 serve build/ 3000 --spa --name pi-signage-admin
 
 # Generate startup script for PM2 and save it
-sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u pi --hp /home/pi
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $(whoami) --hp $HOME
 pm2 save
 
 echo "====================================================="
